@@ -2,20 +2,21 @@ import asyncio
 import websockets
 import logging
 import json
+import argparse
 
 class WebWorky:
-    def __init__(self, host="localhost", port=8765):
+    def __init__(self, host="localhost", port=8765, debug=False):
         self.host = host
         self.port = port
         self.hooks = {}
         self.logger = logging.getLogger("WebWorky")
         self.logger.setLevel(logging.INFO)
-        handler = logging.FileHandler("server.log")
+        if debug:
+            handler = logging.StreamHandler()
+        else:
+            handler = logging.FileHandler("server.log")
         handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
         self.logger.addHandler(handler)
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
-        self.logger.addHandler(console_handler)
 
     def register_hook(self, message_name, hook_function):
         self.hooks[message_name] = hook_function
@@ -57,20 +58,27 @@ class WebWorky:
 
     async def start_server(self):
         try:
-            server = await websockets.serve(self.server_handler, self.host, self.port)
             self.logger.info(f"WebSocket server started on ws://{self.host}:{self.port}")
+            server = await websockets.serve(self.server_handler, self.host, self.port)
             await server.wait_closed()
         except Exception as e:
             self.logger.error(f"Server error: {e}")
 
-# Esempio di utilizzo della classe WebWorky
-async def example_hook(websocket, payload):
-    response = {"message": "response_example", "payload": {"status": "received", "data": payload}}
-    return response
+# # Esempio di utilizzo della classe WebWorky
+# async def example_hook(websocket, payload):
+#     response = {"message": "response_example", "payload": {"status": "received", "data": payload}}
+#     return response
 
-if __name__ == "__main__":
-    webworky = WebWorky()
-    webworky.register_hook("example_message", example_hook)
+# def main():
+#     parser = argparse.ArgumentParser(description="Webworky websocket Server")
+#     parser.add_argument('--debug', action='store_true', help='Enable debug logging to console')
+#     args = parser.parse_args()
+
+#     webworky = WebWorky(debug=args.debug)
+#     webworky.register_hook("example_message", example_hook)
     
-    # Avvio dell'event loop
-    asyncio.run(webworky.start_server())
+#     # Avvio dell'event loop
+#     asyncio.run(webworky.start_server())
+
+# if __name__ == "__main__":
+#     main()
